@@ -74,6 +74,9 @@ public class Demo extends Sprite {
         addChild(lightQuad);
 
         var light1:Light    = new Light(5, 5, 100, lightQuad);
+        light1.attenuation  = 1.2;
+        light1.color        = 0xdeda12;
+        light1.blur         = 2;
         _resolver.addLight(light1);
 
         _resolver.resolve();

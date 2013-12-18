@@ -6,7 +6,7 @@
 package starling.util {
 import com.barliesque.agal.EasierAGAL;
 import com.barliesque.agal.IComponent;
-import com.barliesque.agal.IComponent;
+import com.barliesque.agal.IField;
 import com.barliesque.agal.IRegister;
 import com.barliesque.agal.TextureFlag;
 import com.barliesque.shaders.macro.Utils;
@@ -17,6 +17,7 @@ import flash.display3D.Context3DProgramType;
 public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
     private var _constants:Vector.<Number>  = new <Number>[0.0, 0.5, 1.0, 2.0];
     private var _uv:Vector.<Number>         = new <Number>[0.0, 0.0, 0.0, 0.0];
+    private var _params:Vector.<Number>     = new <Number>[1.0, 1.0, 1.0, 1.0];
 
     public function get minU():Number { return _uv[0]; }
     public function set minU(value:Number):void { _uv[0] = value; }
@@ -30,9 +31,31 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
     public function get maxV():Number { return _uv[3]; }
     public function set maxV(value:Number):void { _uv[3] = value; }
 
+    public function get attenuation():Number { return _params[3]; }
+    public function set attenuation(value:Number):void { _params[3] = value; }
+
+    public function get color():int {
+        var r:int = Math.round(_params[0] * 255);
+        var g:int = Math.round(_params[1] * 255);
+        var b:int = Math.round(_params[2] * 255);
+
+        return (r << 16) + (g << 8) + b;
+    }
+
+    public function set color(value:int):void {
+        var r:int = ((value & 0xFF0000) >> 16);
+        var g:int = ((value & 0x00FF00) >> 8);
+        var b:int = (value & 0x0000FF);
+
+        _params[0] = r / 255.0;
+        _params[1] = g / 255.0;
+        _params[2] = b / 255.0;
+    }
+
     public function activate(context:Context3D):void {
         context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, _constants);
         context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _uv);
+        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 2, _params);
     }
 
     public function deactivate(context:Context3D):void { }
@@ -54,6 +77,8 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
         var maxU:IComponent             = CONST[1].y;
         var minV:IComponent             = CONST[1].z;
         var maxV:IComponent             = CONST[1].w;
+        var lightColor:IField           = CONST[2].rgb;
+        var attenuation:IComponent      = CONST[2].w;
         var uvInput:IRegister           = TEMP[0];
         var uvHorizontal:IRegister      = TEMP[1];
         var uvVertical:IRegister        = TEMP[2];
@@ -63,42 +88,53 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
 
         move(uvInput, VARYING[0]);
 
+        comment("uv -> [0, 1]")
         ShaderUtil.normalize(uvInput.x, minU, maxU, TEMP[4].x);
         ShaderUtil.normalize(uvInput.y, minV, maxV, TEMP[4].x);
 
+        comment("create UVs for reading horizontal shadow distance and scale it to [minU, maxU] and [minV, maxV]");
         move(uvHorizontal, uvInput);
         normalizedToHorizontalUV(uvHorizontal, TEMP[4], half, one, two);
         ShaderUtil.scale(uvHorizontal.x, minU, maxU, TEMP[4].x);
         ShaderUtil.scale(uvHorizontal.y, minV, maxV, TEMP[4].x);
 
+        comment("create UVs for reading vertical shadow distance and scale it to [minU, maxU] and [minV, maxV]");
         move(uvVertical, uvInput);
         normalizedToVerticalUV(uvVertical, TEMP[4], half, one, two);
         ShaderUtil.scale(uvVertical.x, minU, maxU, TEMP[4].x);
         ShaderUtil.scale(uvVertical.y, minV, maxV, TEMP[4].x);
 
-        move(TEMP[4].y, zero);
-        subtract(TEMP[4].y, TEMP[4].y, one);
+        comment("create UVs in [-1, 1] and abs()");
+        subtract(uvInput.z, uvInput.x, half);
+        multiply(uvInput.z, uvInput.z, two);
+        subtract(uvInput.w, uvInput.y, half);
+        multiply(uvInput.w, uvInput.w, two);
+        abs(uvInput.z, uvInput.z);
+        abs(uvInput.w, uvInput.w);
 
-        ShaderUtil.scale(uvInput.x, TEMP[4].y, one, TEMP[4].x);
-        ShaderUtil.scale(uvInput.y, TEMP[4].y, one, TEMP[4].x);
-        abs(uvInput.z, uvInput.x);
-        abs(uvInput.w, uvInput.y);
+        var comparison:String = Utils.GREATER_THAN;
 
-        Utils.setByComparison(uv, uvInput.z, Utils.GREATER_OR_EQUAL, uvInput.w, uvHorizontal, uvVertical, TEMP[4]);
-
+        comment("sample horizontal or vertical shadow map");
+        Utils.setByComparison(uv, uvInput.z, comparison, uvInput.w, uvHorizontal, uvVertical, TEMP[4]);
         sampleTexture(inputColor, uv, SAMPLER[0], [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_NEAREST, TextureFlag.MIP_NO]);
 
-        Utils.setByComparison(TEMP[5].x, uvInput.z, Utils.GREATER_OR_EQUAL, uvInput.w, inputColor.r, inputColor.g, TEMP[4]);
-        ShaderUtil.distance(TEMP[5].y, uvInput.x, uvInput.y, TEMP[4].z, TEMP[4].w, zero, one, half);
+        comment("read shadow distance from the map and calculate current distance from texture's center");
+        Utils.setByComparison(TEMP[5].x, uvInput.z, comparison, uvInput.w, inputColor.r, inputColor.g, TEMP[4]);
+        ShaderUtil.distance(TEMP[5].y, uvInput.z, uvInput.w, TEMP[4].z, TEMP[4].w, zero, one, half);
 
-        Utils.setByComparison(outputColor.rgb, TEMP[5].x, Utils.GREATER_THAN, TEMP[5].y, zero, one, TEMP[4]);
+        comment("pixels behind caster are black (zero) in front - white (rgb)");
+        Utils.setByComparison(outputColor.rgb, TEMP[5].y, Utils.LESS_THAN, TEMP[5].x, zero, lightColor, TEMP[4]);
 
+        comment("multiply by attenuation based on current distance from the center and passed constant value");
         subtract(TEMP[5].y, TEMP[5].y, half);
         multiply(TEMP[5].y, TEMP[5].y, two);
+        multiply(TEMP[5].y, TEMP[5].y, attenuation);
+        Utils.clamp(TEMP[5].y, TEMP[5].y, zero, one);
         multiply(outputColor.rgb, outputColor.rgb, TEMP[5].y);
 
-        //move(outputColor, uv);
-        //move(outputColor.b, zero);
+        // TODO: fix this bug - diagonal values are incorrect
+        //move(outputColor.rgb, TEMP[5].x);
+
         move(outputColor.a, one);
 
         move(OUTPUT, outputColor);

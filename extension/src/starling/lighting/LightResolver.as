@@ -11,6 +11,7 @@ import flash.geom.Rectangle;
 import starling.display.DisplayObject;
 import starling.textures.RenderTexture;
 import starling.textures.Texture;
+import starling.util.DistanceBlurShader;
 import starling.util.RayGeneratorShader;
 import starling.util.RayReductorShader;
 import starling.util.RenderTextureShader;
@@ -36,6 +37,7 @@ public class LightResolver {
     private var _raysShader:RayGeneratorShader                  = new RayGeneratorShader();
     private var _reductionShaders:Vector.<RayReductorShader>    = new <RayReductorShader>[];
     private var _shadowShader:ShadowRendererShader              = new ShadowRendererShader();
+    private var _blurShader:DistanceBlurShader                  = new DistanceBlurShader();
 
     /** The shadow layer this resolver renders lights to. */
     public function get shadowLayer():ShadowLayer { return _shadowLayer; }
@@ -101,12 +103,10 @@ public class LightResolver {
             renderRays(_lightRect, _raysFirstTexture, castersTexture);
 
             var shadowMap:Texture = renderShadowMap(_lightRect, _raysFirstTexture, _raysSecondTexture, 32);
+            var output:Texture = shadowMap == _raysFirstTexture ? _raysSecondTexture : _raysFirstTexture;
 
-            renderShadow(
-                _lightRect,
-                shadowMap == _raysFirstTexture ? _raysSecondTexture : _raysFirstTexture,
-                shadowMap == _raysFirstTexture ? _raysFirstTexture : _raysSecondTexture
-            );
+            renderShadow(light, _lightRect, output, shadowMap);
+            renderBlur(light, _lightRect, output, shadowMap);
         }
     }
 
@@ -197,7 +197,7 @@ public class LightResolver {
         return _textureProcessor.output;
     }
 
-    private function renderShadow(lightRect:Rectangle, output:Texture, shadowMap:Texture):void {
+    private function renderShadow(light:Light, lightRect:Rectangle, output:Texture, shadowMap:Texture):void {
         _helperRect.setTo(0, 0, 2, lightRect.height);
 
         _textureProcessor.input     = shadowMap;
@@ -210,12 +210,37 @@ public class LightResolver {
         _shadowShader.minV = _helperRect.top / _textureProcessor.input.root.height;
         _shadowShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
 
+        _shadowShader.attenuation   = light.attenuation;
+        _shadowShader.color         = light.color;
+
         _helperRect.setTo(0, 0, lightRect.width, lightRect.height);
 
         _helperMatrix.identity();
         _helperMatrix.scale(_helperRect.width / 2, 1);
 
         _textureProcessor.process(true, _helperMatrix, _helperRect);
+    }
+
+    private function renderBlur(light:Light, lightRect:Rectangle, shadowTexture:Texture, tmpTexture:Texture):void {
+        _helperRect.setTo(0, 0, lightRect.width, lightRect.height);
+
+        _textureProcessor.input     = shadowTexture;
+        _textureProcessor.output    = tmpTexture;
+        _textureProcessor.shader    = _blurShader;
+
+        _blurShader.strength        = light.blur;
+
+        _blurShader.type            = DistanceBlurShader.HORIZONTAL;
+        _blurShader.pixelWidth      = 1 / shadowTexture.root.width; // height is not important right now
+
+        _textureProcessor.process(true, null, _helperRect);
+
+        _textureProcessor.swap();
+
+        _blurShader.type            = DistanceBlurShader.VERTICAL;
+        _blurShader.pixelHeight     = 1 / tmpTexture.root.height;
+
+        _textureProcessor.process(true, null, _helperRect);
     }
 
     private function getReductionShader(width:int):RayReductorShader {

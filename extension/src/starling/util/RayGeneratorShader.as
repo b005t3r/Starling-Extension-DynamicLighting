@@ -19,10 +19,6 @@ public class RayGeneratorShader extends EasierAGAL implements ITextureShader {
     private var _constants:Vector.<Number>  = new <Number>[0.0, 0.5, 1.0, 2.0];
     private var _uv:Vector.<Number>      = new <Number>[0.0, 0.0, 0.0, 0.0];
 
-    public function RayGeneratorShader(debug:Boolean = true, assemblyDebug:Boolean = false) {
-        super(debug, assemblyDebug);
-    }
-
     public function get minU():Number { return _uv[0]; }
     public function set minU(value:Number):void { _uv[0] = value; }
 
