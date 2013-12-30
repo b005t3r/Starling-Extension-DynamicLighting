@@ -228,19 +228,32 @@ public class LightResolver {
         _textureProcessor.output    = tmpTexture;
         _textureProcessor.shader    = _blurShader;
 
+        _blurShader.minU = _helperRect.left / _textureProcessor.input.root.width;
+        _blurShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
+        _blurShader.minV = _helperRect.top / _textureProcessor.input.root.height;
+        _blurShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+
         _blurShader.strength        = light.blur;
 
         _blurShader.type            = DistanceBlurShader.HORIZONTAL;
-        _blurShader.pixelWidth      = 1 / shadowTexture.root.width; // height is not important right now
+        _blurShader.pixelWidth      = 1 / _textureProcessor.input.root.width;
 
-        _textureProcessor.process(true, null, _helperRect);
+        var pass:int, numPasses:int = _blurShader.passesNeeded;
 
-        _textureProcessor.swap();
+        for(pass = 0; pass < numPasses; ++pass) {
+            _blurShader.pass = pass;
+            _textureProcessor.process(true, null, _helperRect);
+            _textureProcessor.swap();
+        }
 
         _blurShader.type            = DistanceBlurShader.VERTICAL;
-        _blurShader.pixelHeight     = 1 / tmpTexture.root.height;
+        _blurShader.pixelHeight     = 1 / _textureProcessor.input.root.height;
 
-        _textureProcessor.process(true, null, _helperRect);
+        for(pass = 0; pass < numPasses; ++pass) {
+            _blurShader.pass = pass;
+            _textureProcessor.process(true, null, _helperRect);
+            _textureProcessor.swap();
+        }
     }
 
     private function getReductionShader(width:int):RayReductorShader {

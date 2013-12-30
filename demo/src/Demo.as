@@ -62,8 +62,8 @@ public class Demo extends Sprite {
         //_raysBImage.width   *= 4;
 
         _castersParent      = new Sprite();
-        _castersParent.x    = 600;
-        _castersParent.y    = 500;
+        _castersParent.x    = 400;
+        _castersParent.y    = 300;
 
         createQuads(_castersParent, _resolver);
 
@@ -76,7 +76,7 @@ public class Demo extends Sprite {
         var light1:Light    = new Light(5, 5, 100, lightQuad);
         light1.attenuation  = 1.2;
         light1.color        = 0xdeda12;
-        light1.blur         = 2;
+        light1.blur         = 1;
         _resolver.addLight(light1);
 
         _resolver.resolve();
@@ -87,13 +87,18 @@ public class Demo extends Sprite {
 
         addChild(_castersParent);
 
-        var tween:Tween = new Tween(_castersParent, 4);
-        tween.animate("x", 300);
-        tween.animate("y", 200);
+//        var tween:Tween = new Tween(_castersParent, 4);
+//        tween.animate("x", 300);
+//        tween.animate("y", 200);
+//        tween.repeatCount = 0;
+//        tween.reverse = true;
+//        Starling.juggler.add(tween);
+
+        var tween:Tween = new Tween(light1, 10);
+        tween.animate("blur", 5);
         tween.repeatCount = 0;
         tween.reverse = true;
-
-//        Starling.juggler.add(tween);
+        Starling.juggler.add(tween);
 
         addEventListener(Event.ENTER_FRAME, onEnterFrame);
         addEventListener(TouchEvent.TOUCH, onTouchEvent);
