@@ -11,6 +11,9 @@
             <entry module-name="EasyAGAL" build-configuration-name="EasyAGAL">
               <dependency linkage="Merged" />
             </entry>
+            <entry module-name="Starling-Extension-TextureProcessor" build-configuration-name="Starling-Extension-TextureProcessor">
+              <dependency linkage="Merged" />
+            </entry>
           </entries>
           <sdk name="AIR SDK 3.8 Beta" />
         </dependencies>
@@ -32,6 +35,7 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="Starling" exported="" />
     <orderEntry type="module" module-name="EasyAGAL" exported="" />
+    <orderEntry type="module" module-name="Starling-Extension-TextureProcessor" exported="" />
   </component>
 </module>
 

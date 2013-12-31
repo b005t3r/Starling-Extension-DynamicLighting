@@ -58,7 +58,7 @@ public class Demo extends Sprite {
         //_raysBImage.y       = 20 + 256 + 20;
         _raysBImage.x       = 400 - 256 / 2;
         _raysBImage.y       = 300 - 256 / 2;
-        _raysBImage.blendMode = BlendMode.MULTIPLY;
+        //_raysBImage.blendMode = BlendMode.MULTIPLY;
         //_raysBImage.width   *= 4;
 
         _castersParent      = new Sprite();
@@ -76,10 +76,10 @@ public class Demo extends Sprite {
         var light1:Light    = new Light(5, 5, 100, lightQuad);
         light1.attenuation  = 1.2;
         light1.color        = 0xdeda12;
-        light1.blur         = 1;
+        light1.blur         = 15.0;
         _resolver.addLight(light1);
 
-        _resolver.resolve();
+        //_resolver.resolve();
 
         addChild(_shadowImage);
         addChild(_raysAImage);
@@ -94,11 +94,11 @@ public class Demo extends Sprite {
 //        tween.reverse = true;
 //        Starling.juggler.add(tween);
 
-        var tween:Tween = new Tween(light1, 10);
-        tween.animate("blur", 5);
-        tween.repeatCount = 0;
-        tween.reverse = true;
-        Starling.juggler.add(tween);
+//        var tween:Tween = new Tween(light1, 10);
+//        tween.animate("blur", 15);
+//        tween.repeatCount = 0;
+//        tween.reverse = true;
+//        Starling.juggler.add(tween);
 
         addEventListener(Event.ENTER_FRAME, onEnterFrame);
         addEventListener(TouchEvent.TOUCH, onTouchEvent);

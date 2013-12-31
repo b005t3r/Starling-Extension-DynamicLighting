@@ -15,6 +15,8 @@ import com.barliesque.shaders.macro.Utils;
 import flash.display3D.Context3D;
 import flash.display3D.Context3DProgramType;
 
+import starling.shaders.ITextureShader;
+
 public class RayReductorShader extends EasierAGAL implements ITextureShader {
     private var _constants:Vector.<Number>  = new <Number>[0.0, 4.0, 0.0, 2.0];
     private var _uv:Vector.<Number>         = new <Number>[0.0, 0.0, 0.0, 0.0];

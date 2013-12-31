@@ -13,6 +13,8 @@ import com.barliesque.shaders.macro.Utils;
 import flash.display3D.Context3D;
 import flash.display3D.Context3DProgramType;
 
+import starling.shaders.ITextureShader;
+
 import starling.util.ShaderUtil;
 
 public class RayGeneratorShader extends EasierAGAL implements ITextureShader {

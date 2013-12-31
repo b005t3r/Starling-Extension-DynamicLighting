@@ -9,14 +9,14 @@ import flash.geom.Point;
 import flash.geom.Rectangle;
 
 import starling.display.DisplayObject;
+import starling.shaders.FastGaussianBlurShader;
 import starling.textures.RenderTexture;
 import starling.textures.Texture;
+import starling.textures.TextureProcessor;
 import starling.util.DistanceBlurShader;
 import starling.util.RayGeneratorShader;
 import starling.util.RayReductorShader;
-import starling.util.RenderTextureShader;
 import starling.util.ShadowRendererShader;
-import starling.util.TextureProcessor;
 import starling.utils.getNextPowerOfTwo;
 
 public class LightResolver {
@@ -235,7 +235,7 @@ public class LightResolver {
 
         _blurShader.strength        = light.blur;
 
-        _blurShader.type            = DistanceBlurShader.HORIZONTAL;
+        _blurShader.type            = FastGaussianBlurShader.HORIZONTAL;
         _blurShader.pixelWidth      = 1 / _textureProcessor.input.root.width;
 
         var pass:int, numPasses:int = _blurShader.passesNeeded;
@@ -246,7 +246,7 @@ public class LightResolver {
             _textureProcessor.swap();
         }
 
-        _blurShader.type            = DistanceBlurShader.VERTICAL;
+        _blurShader.type            = FastGaussianBlurShader.VERTICAL;
         _blurShader.pixelHeight     = 1 / _textureProcessor.input.root.height;
 
         for(pass = 0; pass < numPasses; ++pass) {
