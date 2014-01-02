@@ -224,33 +224,31 @@ public class LightResolver {
     private function renderBlur(light:Light, lightRect:Rectangle, shadowTexture:Texture, tmpTexture:Texture):void {
         _helperRect.setTo(0, 0, lightRect.width, lightRect.height);
 
-        _textureProcessor.input     = shadowTexture;
-        _textureProcessor.output    = tmpTexture;
-        _textureProcessor.shader    = _blurShader;
+        _textureProcessor.input = shadowTexture;
+        _textureProcessor.output = tmpTexture;
+        _textureProcessor.shader = _blurShader;
 
         _blurShader.minU = _helperRect.left / _textureProcessor.input.root.width;
         _blurShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
         _blurShader.minV = _helperRect.top / _textureProcessor.input.root.height;
         _blurShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
 
-        _blurShader.strength        = light.blur;
+        _blurShader.strength = light.blur;
+        _blurShader.pixelWidth = 1 / _textureProcessor.input.root.width;
+        _blurShader.pixelHeight = 1 / _textureProcessor.input.root.height;
 
-        _blurShader.type            = FastGaussianBlurShader.HORIZONTAL;
-        _blurShader.pixelWidth      = 1 / _textureProcessor.input.root.width;
+        var numPasses:int = _blurShader.passesNeeded;
 
-        var pass:int, numPasses:int = _blurShader.passesNeeded;
-
-        for(pass = 0; pass < numPasses; ++pass) {
+        for(var pass:int = 0; pass < numPasses; ++pass) {
             _blurShader.pass = pass;
+
+            _blurShader.type = FastGaussianBlurShader.HORIZONTAL;
+
             _textureProcessor.process(true, null, _helperRect);
             _textureProcessor.swap();
-        }
 
-        _blurShader.type            = FastGaussianBlurShader.VERTICAL;
-        _blurShader.pixelHeight     = 1 / _textureProcessor.input.root.height;
+            _blurShader.type = FastGaussianBlurShader.VERTICAL;
 
-        for(pass = 0; pass < numPasses; ++pass) {
-            _blurShader.pass = pass;
             _textureProcessor.process(true, null, _helperRect);
             _textureProcessor.swap();
         }
