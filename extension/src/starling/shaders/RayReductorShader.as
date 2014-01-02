@@ -3,7 +3,7 @@
  * Date: 13/12/13
  * Time: 12:05
  */
-package starling.util {
+package starling.shaders {
 import com.barliesque.agal.EasierAGAL;
 import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IComponent;

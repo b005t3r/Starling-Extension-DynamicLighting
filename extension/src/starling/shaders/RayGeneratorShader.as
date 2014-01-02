@@ -3,7 +3,7 @@
  * Date: 11/12/13
  * Time: 15:24
  */
-package starling.util {
+package starling.shaders {
 import com.barliesque.agal.EasierAGAL;
 import com.barliesque.agal.IComponent;
 import com.barliesque.agal.IRegister;
@@ -15,7 +15,7 @@ import flash.display3D.Context3DProgramType;
 
 import starling.shaders.ITextureShader;
 
-import starling.util.ShaderUtil;
+import starling.shaders.LightingShaderUtil;
 
 public class RayGeneratorShader extends EasierAGAL implements ITextureShader {
     private var _constants:Vector.<Number>  = new <Number>[0.0, 0.5, 1.0, 2.0];
@@ -79,10 +79,27 @@ public class RayGeneratorShader extends EasierAGAL implements ITextureShader {
         move(TEMP[0].a, CONST[0].z);
 
         comment("r = r * distanceFromCenter, g = g * distanceFromCenter");
-        ShaderUtil.encodeDistance(TEMP[0].r, TEMP[3].x, TEMP[3].y, TEMP[3].z, TEMP[3].w, CONST[0].x, CONST[0].y, CONST[0].z);
-        ShaderUtil.encodeDistance(TEMP[0].g, TEMP[4].y, TEMP[4].x, TEMP[4].w, TEMP[4].z, CONST[0].x, CONST[0].y, CONST[0].z);
+        encodeDistance(TEMP[0].r, TEMP[3].x, TEMP[3].y, TEMP[3].z, TEMP[3].w, CONST[0].x, CONST[0].y, CONST[0].z);
+        encodeDistance(TEMP[0].g, TEMP[4].y, TEMP[4].x, TEMP[4].w, TEMP[4].z, CONST[0].x, CONST[0].y, CONST[0].z);
 
         move(OUTPUT, TEMP[0]);
+    }
+
+    /** Encodes distance from [0, 0] in cartesian space by multiplying by value from [0.5, 1], depending on its distance from the texture's center. */
+    private static function encodeDistance(value:IComponent, x:IComponent, y:IComponent, tempX:IComponent, tempY:IComponent, zero:IComponent, half:IComponent, one:IComponent):void {
+        multiply(tempX, x, x);
+        multiply(tempY, y, y);
+
+        add(tempX, tempX, tempY);
+        squareRoot(tempX, tempX);
+
+        Utils.clamp(tempX, tempX, zero, one);
+        subtract(tempX, one, tempX);
+
+        multiply(tempX, half, tempX);
+        add(tempX, half, tempX);
+
+        multiply(value, value, tempX);
     }
 }
 }

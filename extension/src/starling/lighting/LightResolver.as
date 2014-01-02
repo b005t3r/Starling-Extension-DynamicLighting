@@ -13,10 +13,10 @@ import starling.shaders.FastGaussianBlurShader;
 import starling.textures.RenderTexture;
 import starling.textures.Texture;
 import starling.textures.TextureProcessor;
-import starling.util.DistanceBlurShader;
-import starling.util.RayGeneratorShader;
-import starling.util.RayReductorShader;
-import starling.util.ShadowRendererShader;
+import starling.shaders.DistanceBlurShader;
+import starling.shaders.RayGeneratorShader;
+import starling.shaders.RayReductorShader;
+import starling.shaders.ShadowRendererShader;
 import starling.utils.getNextPowerOfTwo;
 
 public class LightResolver {
