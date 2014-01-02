@@ -122,7 +122,7 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
 
         comment("read shadow distance from the map and calculate current distance from texture's center");
         Utils.setByComparison(TEMP[5].x, uvInput.z, comparison, uvInput.w, inputColor.r, inputColor.g, TEMP[4]);
-        ShaderUtil.distance(TEMP[5].y, uvInput.z, uvInput.w, TEMP[4].z, TEMP[4].w, zero, one, half);
+        distance(TEMP[5].y, uvInput.z, uvInput.w, TEMP[4].z, TEMP[4].w, zero, one, half);
 
         comment("pixels behind caster are black (zero) in front - white (rgb)");
         Utils.setByComparison(outputColor.rgb, TEMP[5].y, Utils.LESS_THAN, TEMP[5].x, zero, lightColor, TEMP[4]);
@@ -140,6 +140,16 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
         move(outputColor.a, one);
 
         move(OUTPUT, outputColor);
+    }
+
+    private static function distance(value:IComponent, x:IComponent, y:IComponent, tempX:IComponent, tempY:IComponent, zero:IComponent, one:IComponent, half:IComponent):void {
+        ShaderUtil.distance(value, x, y, tempX, tempY);
+
+        Utils.clamp(value, value, zero, one);
+        subtract(value, one, value);
+
+        multiply(value, half, value);
+        add(value, half, value);
     }
 
     private function normalizedToHorizontalUV(uv:IRegister, temp:IRegister, half:IComponent, one:IComponent, two:IComponent):void {
