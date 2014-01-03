@@ -13,11 +13,10 @@ public class Light {
     private var _x:Number;
     private var _y:Number;
     private var _radius:Number;
-    private var _attenuation:Number;
-    private var _color:int;
-
     private var _parent:DisplayObject;
-    private var _resolver:LightResolver     = null;
+
+    private var _color:int                  = 0xffffff;
+    private var _attenuation:Number         = 1.0;
     private var _resolution:Number          = 1.0;
     private var _blur:Number                = 1.0;
 
@@ -56,18 +55,11 @@ public class Light {
     public function get blur():Number { return _blur; }
     public function set blur(value:Number):void { _blur = value; }
 
-    /** The light resolver object this light is resolved by. */
-    public function get resolver():LightResolver { return _resolver; }
-
     /** The resolution (quality) of this light. Higher values will create larger texture, lower a smaller one. @default 1.0*/
     public function get resolution():Number { return _resolution; }
     public function set resolution(value:Number):void {
         if (value <= 0) throw new ArgumentError("Resolution must be > 0");
         else _resolution = value;
-    }
-
-    starling_internal function setResolver(resolver:LightResolver):void {
-        _resolver = resolver;
     }
 }
 }
