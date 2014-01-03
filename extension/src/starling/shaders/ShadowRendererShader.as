@@ -18,7 +18,7 @@ import starling.shaders.ITextureShader;
 
 public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
     private var _constants:Vector.<Number>  = new <Number>[0.0, 0.5, 1.0, 2.0];
-    private var _uv:Vector.<Number>         = new <Number>[0.0, 0.0, 0.0, 0.0];
+    private var _uv:Vector.<Number>         = new <Number>[0.0, 1.0, 0.0, 1.0];
     private var _params:Vector.<Number>     = new <Number>[1.0, 1.0, 1.0, 1.0];
 
     public function get minU():Number { return _uv[0]; }
@@ -90,7 +90,7 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
 
         move(uvInput, VARYING[0]);
 
-        comment("uv -> [0, 1]")
+        comment("uv -> [0, 1]");
         ShaderUtil.normalize(uvInput.x, minU, maxU, TEMP[4].x);
         ShaderUtil.normalize(uvInput.y, minV, maxV, TEMP[4].x);
 
@@ -124,12 +124,12 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
         Utils.setByComparison(TEMP[5].x, uvInput.z, comparison, uvInput.w, inputColor.r, inputColor.g, TEMP[4]);
         distance(TEMP[5].y, uvInput.z, uvInput.w, TEMP[4].z, TEMP[4].w, zero, one, half);
 
-        comment("pixels behind caster are black (zero) in front - white (rgb)");
         Utils.setByComparison(outputColor.rgb, TEMP[5].y, Utils.LESS_THAN, TEMP[5].x, zero, lightColor, TEMP[4]);
 
-        comment("multiply by attenuation based on current distance from the center and passed constant value");
-        subtract(TEMP[5].y, TEMP[5].y, half);
-        multiply(TEMP[5].y, TEMP[5].y, two);
+        comment("distance is encoded in range [0.5, 1], normalize it first");
+        ShaderUtil.normalize(TEMP[5].y, half, one, TEMP[5].z);
+
+        comment("multiply by attenuation, based on current distance from the center and passed constant value");
         multiply(TEMP[5].y, TEMP[5].y, attenuation);
         Utils.clamp(TEMP[5].y, TEMP[5].y, zero, one);
         multiply(outputColor.rgb, outputColor.rgb, TEMP[5].y);
