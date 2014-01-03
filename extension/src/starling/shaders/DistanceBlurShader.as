@@ -22,11 +22,11 @@ public class DistanceBlurShader extends FastGaussianBlurShader {
     private var _shaderConstants:Vector.<Number>  = new <Number>[0, 1, 2, 0];
 
     // shader constants
-    protected var minDistance:IComponent    = CONST[3].x;
-    protected var maxDistance:IComponent    = CONST[3].y;
-    protected var zero:IComponent           = CONST[4].x;
-    protected var one:IComponent            = CONST[4].y;
-    protected var two:IComponent            = CONST[4].z;
+    protected var minDistance:IComponent    = CONST[4].x;
+    protected var maxDistance:IComponent    = CONST[4].y;
+    protected var zero:IComponent           = CONST[5].x;
+    protected var one:IComponent            = CONST[5].y;
+    protected var two:IComponent            = CONST[5].z;
 
     public function get minRatio():Number { return _minRatio; }
     public function set minRatio(value:Number):void {
@@ -47,9 +47,11 @@ public class DistanceBlurShader extends FastGaussianBlurShader {
     }
 
     override public function set strength(value:Number):void {
+        var oldStrength:Number = strength;
+
         super.strength = value;
 
-        _distancesDirty = true;
+        _distancesDirty = _distancesDirty || value != oldStrength;
     }
 
     override public function activate(context:Context3D):void {
@@ -62,8 +64,8 @@ public class DistanceBlurShader extends FastGaussianBlurShader {
         _shaderDistances[0] = _distances[pass + 1];
         _shaderDistances[1] = _distances[pass];
 
-        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 3, _shaderDistances);
-        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 4, _shaderConstants);
+        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 4, _shaderDistances);
+        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 5, _shaderConstants);
     }
 
     override protected function _fragmentShader():void {
@@ -128,19 +130,19 @@ public class DistanceBlurShader extends FastGaussianBlurShader {
         var maxStrength:Number  = strength * maxRatio;
         var diff:Number         = maxStrength - minStrength;
 
-        _distances.length   = 0;
-        _distances[0]       = 1;
 
-        if(strength > 0) {
-            var count:int = _strengths.length - 1;
-            for(var i:int = 0; i < count; i++) {
-                // max distance for strength i-1, min for strength i
-                var str:Number      = _strengths[i];
-                _distances[i + 1]   = str / diff;
-            }
+        var sum:Number      = 0;
+        var count:int       = _strengths.length;
+        _distances.length   = count;
+
+        for(var i:int = count; i > 0; i--) {
+            _distances[i]   = sum;
+
+            var str:Number  = _strengths[i - 1];
+            sum            += str / diff;
         }
 
-        _distances[_distances.length] = 0;
+        _distances[0] = 1;
     }
 }
 }
