@@ -210,8 +210,7 @@ public class LightResolver {
         _shadowShader.minV = _helperRect.top / _textureProcessor.input.root.height;
         _shadowShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
 
-        _shadowShader.attenuation   = light.attenuation;
-        _shadowShader.color         = light.color;
+        _shadowShader.color = light.color;
 
         _helperRect.setTo(0, 0, lightRect.width, lightRect.height);
 

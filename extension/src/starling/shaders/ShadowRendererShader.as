@@ -19,7 +19,7 @@ import starling.shaders.ITextureShader;
 public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
     private var _constants:Vector.<Number>  = new <Number>[0.0, 0.5, 1.0, 2.0];
     private var _uv:Vector.<Number>         = new <Number>[0.0, 1.0, 0.0, 1.0];
-    private var _params:Vector.<Number>     = new <Number>[1.0, 1.0, 1.0, 1.0];
+    private var _params:Vector.<Number>     = new <Number>[1.0, 1.0, 1.0, 0.0];
 
     public function get minU():Number { return _uv[0]; }
     public function set minU(value:Number):void { _uv[0] = value; }
@@ -32,9 +32,6 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
 
     public function get maxV():Number { return _uv[3]; }
     public function set maxV(value:Number):void { _uv[3] = value; }
-
-    public function get attenuation():Number { return _params[3]; }
-    public function set attenuation(value:Number):void { _params[3] = value; }
 
     public function get color():int {
         var r:int = Math.round(_params[0] * 255);
@@ -80,7 +77,6 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
         var minV:IComponent             = CONST[1].z;
         var maxV:IComponent             = CONST[1].w;
         var lightColor:IField           = CONST[2].rgb;
-        var attenuation:IComponent      = CONST[2].w;
         var uvInput:IRegister           = TEMP[0];
         var uvHorizontal:IRegister      = TEMP[1];
         var uvVertical:IRegister        = TEMP[2];
@@ -128,11 +124,6 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
 
         comment("distance is encoded in range [0.5, 1], normalize it first");
         ShaderUtil.normalize(TEMP[5].y, half, one, TEMP[5].z);
-
-        comment("multiply by attenuation, based on current distance from the center and passed constant value");
-        multiply(TEMP[5].y, TEMP[5].y, attenuation);
-        Utils.clamp(TEMP[5].y, TEMP[5].y, zero, one);
-        multiply(outputColor.rgb, outputColor.rgb, TEMP[5].y);
 
         // TODO: fix this bug - diagonal values are incorrect
         //move(outputColor.rgb, TEMP[5].x);
