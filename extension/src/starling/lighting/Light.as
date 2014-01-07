@@ -15,10 +15,11 @@ public class Light {
     private var _radius:Number;
     private var _parent:DisplayObject;
 
-    private var _color:int                  = 0xffffff;
-    private var _attenuation:Number         = 1.0;
-    private var _resolution:Number          = 1.0;
-    private var _blur:Number                = 1.0;
+    private var _color:int          = 0xffffff;
+    private var _attenuation:Number = 1.0;
+    private var _resolution:Number  = 1.0;
+    private var _centerBlur:Number  = 0.0;
+    private var _edgeBlur:Number    = 1.0;
 
     public function Light(x:Number, y:Number, r:Number, parent:DisplayObject = null) {
         _x = x;
@@ -51,9 +52,13 @@ public class Light {
     public function get parent():DisplayObject { return _parent; }
     public function set parent(value:DisplayObject):void { _parent = value; }
 
+    /** Center blur of the light. Values above one increase blur strength, below decrease it. @default 0.0 */
+    public function get centerBlur():Number { return _centerBlur; }
+    public function set centerBlur(value:Number):void { _centerBlur = value; }
+
     /** Edge blur of the light. Values above one increase blur strength, below decrease it. @default 1.0 */
-    public function get blur():Number { return _blur; }
-    public function set blur(value:Number):void { _blur = value; }
+    public function get edgeBlur():Number { return _edgeBlur; }
+    public function set edgeBlur(value:Number):void { _edgeBlur = value; }
 
     /** The resolution (quality) of this light. Higher values will create larger texture, lower a smaller one. @default 1.0*/
     public function get resolution():Number { return _resolution; }
