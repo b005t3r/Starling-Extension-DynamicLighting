@@ -136,10 +136,10 @@ public class LightResolver {
         var hOffset:Number  = w - output.width;
         var vOffset:Number  = h - output.height;
 
-        output.left    -= hOffset / 2;
-        output.right   += hOffset / 2;
-        output.top     -= vOffset / 2;
-        output.bottom  += vOffset / 2;
+        output.left    = Math.round(output.left - hOffset / 2);
+        output.right   = Math.round(output.right + hOffset / 2);
+        output.top     = Math.round(output.top - vOffset / 2);
+        output.bottom  = Math.round(output.bottom + vOffset / 2);
     }
 
     /** Creates a texture with each ray drawn horizontally, so it can later be used for rendering a shadow map. */
@@ -212,16 +212,18 @@ public class LightResolver {
 
         _shadowShader.color = light.color;
 
-        _helperRect.setTo(0, 0, lightRect.width, lightRect.height);
+        var r:Number = light.radius;
+        _helperRect.setTo(lightRect.width / 2 - r, lightRect.height / 2 - r, 2 * r, 2 * r);
 
         _helperMatrix.identity();
-        _helperMatrix.scale(_helperRect.width / 2, 1);
+        _helperMatrix.scale(_lightRect.width / 2, 1);
 
         _textureProcessor.process(true, _helperMatrix, _helperRect);
     }
 
     private function renderBlur(light:Light, lightRect:Rectangle, shadowTexture:Texture, tmpTexture:Texture):void {
-        _helperRect.setTo(0, 0, lightRect.width, lightRect.height);
+        var r:Number = light.radius;
+        _helperRect.setTo(lightRect.width / 2 - r, lightRect.height / 2 - r, 2 * r, 2 * r);
 
         _textureProcessor.input = shadowTexture;
         _textureProcessor.output = tmpTexture;
@@ -232,9 +234,10 @@ public class LightResolver {
         _blurShader.minV = _helperRect.top / _textureProcessor.input.root.height;
         _blurShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
 
-        _blurShader.strength = light.blur;
-        _blurShader.pixelWidth = 1 / _textureProcessor.input.root.width;
-        _blurShader.pixelHeight = 1 / _textureProcessor.input.root.height;
+        _blurShader.edgeStrength    = light.edgeBlur;
+        _blurShader.centerStrength  = light.centerBlur;
+        _blurShader.pixelWidth      = 1 / _textureProcessor.input.root.width;
+        _blurShader.pixelHeight     = 1 / _textureProcessor.input.root.height;
 
         var numPasses:int = _blurShader.passesNeeded;
 
