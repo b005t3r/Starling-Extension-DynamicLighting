@@ -9,7 +9,9 @@ import flash.geom.Point;
 import flash.geom.Rectangle;
 
 import starling.display.DisplayObject;
+import starling.display.Quad;
 import starling.shaders.FastGaussianBlurShader;
+import starling.shaders.FinalShadowRendererShader;
 import starling.textures.RenderTexture;
 import starling.textures.Texture;
 import starling.textures.TextureProcessor;
@@ -32,12 +34,14 @@ public class LightResolver {
     private var _raysFirstTexture:RenderTexture;
     private var _raysSecondTexture:RenderTexture;
     private var _castersTexture:RenderTexture;
+    private var _shadowsTexture:RenderTexture;
 
     private var _textureProcessor:TextureProcessor              = new TextureProcessor();
     private var _raysShader:RayGeneratorShader                  = new RayGeneratorShader();
     private var _reductionShaders:Vector.<RayReductorShader>    = new <RayReductorShader>[];
     private var _shadowShader:ShadowRendererShader              = new ShadowRendererShader();
     private var _blurShader:DistanceBlurShader                  = new DistanceBlurShader();
+    private var _finalShadowShader:FinalShadowRendererShader    = new FinalShadowRendererShader();
 
     /** The shadow layer this resolver renders lights to. */
     public function get shadowLayer():ShadowLayer { return _shadowLayer; }
@@ -47,6 +51,7 @@ public class LightResolver {
         _raysFirstTexture   = new RenderTexture(512, 512, false);
         _raysSecondTexture  = new RenderTexture(512, 512, false);
         _castersTexture     = new RenderTexture(2048, 2048, false);
+        _shadowsTexture     = new RenderTexture(2048, 2048, false);
 
         for(var i:int = 2; i <= 32; i *= 2) {
             var shader:RayReductorShader = new RayReductorShader();
@@ -57,6 +62,7 @@ public class LightResolver {
     }
 
     public function get castersTexture():Texture { return _castersTexture; }
+    public function get shadowsTexture():Texture { return _shadowsTexture; }
     public function get raysFirstTexture():Texture { return _raysFirstTexture; } // TODO: remove
     public function get raysSecondTexture():Texture { return _raysSecondTexture; } // TODO: remove
 
@@ -95,6 +101,9 @@ public class LightResolver {
     public function resolve():void {
         renderCasters(_shadowCasters, _castersTexture);
 
+        _shadowsTexture.clear();
+        _shadowsTexture.draw(new Quad(2048, 2048, 0x000000));
+
         var lightCount:int = _lights.length;
         for(var i:int = 0; i < lightCount; i++) {
             var light:Light = _lights[i];
@@ -106,7 +115,9 @@ public class LightResolver {
             var output:Texture = shadowMap == _raysFirstTexture ? _raysSecondTexture : _raysFirstTexture;
 
             renderShadow(light, _lightRect, output, shadowMap);
-            renderBlur(light, _lightRect, output, shadowMap);
+            var shadow:Texture = renderBlur(light, _lightRect, output, shadowMap);
+
+            renderFinalShadow(light, _lightRect, shadow, _shadowsTexture);
         }
     }
 
@@ -254,6 +265,27 @@ public class LightResolver {
             _textureProcessor.process(true, null, _helperRect);
             _textureProcessor.swap();
         }
+
+        return _textureProcessor.input; // input is swapped with output, so return input
+    }
+
+    private function renderFinalShadow(light:Light, lightRect:Rectangle, shadowTexture:Texture, outputTexture:Texture):void {
+        var r:Number = light.radius;
+        _helperRect.setTo(lightRect.width / 2 - r, lightRect.height / 2 - r, 2 * r, 2 * r);
+
+        _textureProcessor.input = shadowTexture;
+        _textureProcessor.output = outputTexture;
+        _textureProcessor.shader = _finalShadowShader;
+
+        _finalShadowShader.minU = _helperRect.left / _textureProcessor.input.root.width;
+        _finalShadowShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
+        _finalShadowShader.minV = _helperRect.top / _textureProcessor.input.root.height;
+        _finalShadowShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+
+        _helperMatrix.identity();
+        _helperMatrix.translate(lightRect.x, lightRect.y);
+
+        _textureProcessor.process(false, _helperMatrix, null, BlendMode.SCREEN);
     }
 
     private function getReductionShader(width:int):RayReductorShader {
