@@ -226,6 +226,9 @@ public class LightResolver {
         _shadowShader.minV = _helperRect.top / _textureProcessor.input.root.height;
         _shadowShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
 
+        _shadowShader.pixelWidth = 1 / _textureProcessor.input.root.width;
+        _shadowShader.pixelHeight = 1 / _textureProcessor.input.root.height;
+
         _shadowShader.color = light.color;
 
         var r:Number = light.radius;
