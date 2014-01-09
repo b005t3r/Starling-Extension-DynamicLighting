@@ -5,6 +5,8 @@
  */
 package {
 import flash.geom.Point;
+import flash.geom.Rectangle;
+import flash.utils.getTimer;
 
 import starling.display.BlendMode;
 import starling.display.Image;
@@ -14,6 +16,7 @@ import starling.events.Event;
 import starling.events.KeyboardEvent;
 import starling.lighting.Light;
 import starling.lighting.LightResolver;
+import starling.textures.SubTexture;
 
 public class MultipleLightsDemo extends Sprite {
     private var _resolver:LightResolver;
@@ -30,15 +33,15 @@ public class MultipleLightsDemo extends Sprite {
 
         _resolver = new LightResolver();
 
-        const xMin:Number = 100, xMax:Number = 700, yMin:Number = 100, yMax:Number = 500, rMin:Number = 30, rMax:Number = 250;
+        const xMin:Number = 100, xMax:Number = 700, yMin:Number = 100, yMax:Number = 500, rMin:Number = 30, rMax:Number = 120;
 
         for(var i:int = 0; i < 10; ++i) {
             var x:Number = Math.random() * (xMax - xMin) + xMin;
             var y:Number = Math.random() * (yMax - yMin) + yMin;
             var radius:Number = Math.random() * (rMax - rMin) + rMin;
-            var r:int = 191 + Math.random() * 64;
-            var g:int = 191 + Math.random() * 64;
-            var b:int = 191 + Math.random() * 64;
+            var r:int = 127 + Math.random() * 128;
+            var g:int = 127 + Math.random() * 128;
+            var b:int = 127 + Math.random() * 128;
             var color:int = (r << 16) | (g << 8) | b;
 
             var quad:Quad = createLightQuad(x, y, color);
@@ -48,7 +51,7 @@ public class MultipleLightsDemo extends Sprite {
             _resolver.addLight(light);
         }
 
-        _shadowImage = new Image(_resolver.shadowsTexture);
+        _shadowImage = new Image(new SubTexture(_resolver.shadowsTexture, new Rectangle(0, 0, 800, 600)));
         _shadowImage.blendMode = BlendMode.MULTIPLY;
         addChild(_shadowImage);
 
@@ -103,17 +106,17 @@ public class MultipleLightsDemo extends Sprite {
         var q:Quad = new Quad(5, 5, color);
 
         q.alignPivot();
-        q.x = x;q.y = y;
+        q.x = x; q.y = y;
 
         return q;
     }
 
     private function createLight(quad:Quad, radius:Number):Light {
-        var l:Light = new Light(0, 0, radius, quad);
+        var l:Light = new Light(quad.width / 2, quad.height / 2, radius, quad);
 
         l.color         = quad.color;
-        l.edgeBlur      = 5;
-        l.centerBlur    = 2;
+        l.edgeBlur      = 0;
+        l.centerBlur    = 0;
 
         return l;
     }

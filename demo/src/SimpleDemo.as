@@ -48,11 +48,11 @@ public class SimpleDemo extends Sprite {
         _shadowImage.y      = 0;
         _shadowImage.blendMode = BlendMode.MULTIPLY;
 
-        _raysAImage         = new Image(_resolver.raysFirstTexture);
+        _raysAImage         = new Image(_resolver.tempTextureA);
         _raysAImage.x       = 500;
         _raysAImage.y       = 20;
 
-        _raysBImage         = new Image(_resolver.raysSecondTexture);
+        _raysBImage         = new Image(_resolver.tempTextureB);
         //_raysBImage.x       = 500;
         //_raysBImage.y       = 20 + 256 + 20;
         _raysBImage.x       = 400 - 256/ 2;
@@ -68,11 +68,11 @@ public class SimpleDemo extends Sprite {
 
         var lightQuad:Quad  = new Quad(10, 10, 0xFFFF00);
         lightQuad.x         = 395;
-        lightQuad.y         = 295;
+        lightQuad.y         = 40; //295;
 
         addChild(lightQuad);
 
-        var light1:Light    = new Light(5, 5, 30, lightQuad);
+        var light1:Light    = new Light(5, 5, 100, lightQuad);
         //light1.attenuation  = 0;
         //light1.color        = 0xdeda12;
         light1.edgeBlur       = 2;
@@ -85,12 +85,12 @@ public class SimpleDemo extends Sprite {
 
         addChild(_castersParent);
 
-        var tween:Tween = new Tween(light1, 5);
-        tween.animate("radius", 250);
-        tween.repeatCount = 0;
-        tween.reverse = true;
-        tween.repeatDelay = 0.5;
-        Starling.juggler.add(tween);
+//        var tween:Tween = new Tween(light1, 5);
+//        tween.animate("radius", 250);
+//        tween.repeatCount = 0;
+//        tween.reverse = true;
+//        tween.repeatDelay = 0.5;
+//        Starling.juggler.add(tween);
 
         addEventListener(Event.ENTER_FRAME, onEnterFrame);
         addEventListener(TouchEvent.TOUCH, onTouchEvent);
@@ -99,8 +99,6 @@ public class SimpleDemo extends Sprite {
     }
 
     private function onTouchEvent(event:TouchEvent):void {
-        super.onTouch(event);
-
         var touch:Touch = event.getTouch(this, TouchPhase.MOVED);
 
         if(touch == null)
