@@ -8,6 +8,8 @@ import flash.geom.Matrix;
 import flash.geom.Point;
 import flash.geom.Rectangle;
 
+import starling.display.BlendMode;
+
 import starling.display.DisplayObject;
 import starling.display.Quad;
 import starling.shaders.FastGaussianBlurShader;
@@ -104,6 +106,9 @@ public class LightResolver {
         _shadowsTexture.clear();
         _shadowsTexture.draw(new Quad(2048, 2048, 0x000000));
 
+        _raysFirstTexture.clear();
+        _raysSecondTexture.clear();
+
         var lightCount:int = _lights.length;
         for(var i:int = 0; i < lightCount; i++) {
             var light:Light = _lights[i];
@@ -172,7 +177,7 @@ public class LightResolver {
         // clipping is done in output space - start at [0, 0]
         _helperRect.setTo(0, 0, lightRect.width, lightRect.height);
 
-        _textureProcessor.process(true, _helperMatrix, _helperRect);
+        _textureProcessor.process(false, _helperMatrix, _helperRect, BlendMode.NONE);
     }
 
     /** Reduces a ray texture into a shadow map (2-pixel width texture). */
@@ -195,7 +200,7 @@ public class LightResolver {
             reductionShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
 
             _textureProcessor.shader = reductionShader;
-            _textureProcessor.process(true, null, _helperRect);
+            _textureProcessor.process(false, null, _helperRect, BlendMode.NONE);
 
             _helperRect.width /= reductionShader.numReads;
 
@@ -229,10 +234,13 @@ public class LightResolver {
         _helperMatrix.identity();
         _helperMatrix.scale(_lightRect.width / 2, 1);
 
-        _textureProcessor.process(true, _helperMatrix, _helperRect);
+        _textureProcessor.process(false, _helperMatrix, _helperRect, BlendMode.NONE);
     }
 
-    private function renderBlur(light:Light, lightRect:Rectangle, shadowTexture:Texture, tmpTexture:Texture):void {
+    private function renderBlur(light:Light, lightRect:Rectangle, shadowTexture:Texture, tmpTexture:Texture):Texture {
+        if(light.edgeBlur == 0 && light.centerBlur == 0)
+            return shadowTexture;
+
         var r:Number = light.radius;
         _helperRect.setTo(lightRect.width / 2 - r, lightRect.height / 2 - r, 2 * r, 2 * r);
 
@@ -257,12 +265,12 @@ public class LightResolver {
 
             _blurShader.type = FastGaussianBlurShader.HORIZONTAL;
 
-            _textureProcessor.process(true, null, _helperRect);
+            _textureProcessor.process(false, null, _helperRect, BlendMode.NONE);
             _textureProcessor.swap();
 
             _blurShader.type = FastGaussianBlurShader.VERTICAL;
 
-            _textureProcessor.process(true, null, _helperRect);
+            _textureProcessor.process(false, null, _helperRect, BlendMode.NONE);
             _textureProcessor.swap();
         }
 
