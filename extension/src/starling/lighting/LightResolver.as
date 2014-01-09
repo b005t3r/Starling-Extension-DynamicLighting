@@ -7,6 +7,7 @@ package starling.lighting {
 import flash.geom.Matrix;
 import flash.geom.Point;
 import flash.geom.Rectangle;
+import flash.utils.getTimer;
 
 import starling.display.BlendMode;
 
@@ -33,8 +34,8 @@ public class LightResolver {
     private var _lights:Vector.<Light>                          = new <Light>[];
     private var _shadowCasters:Vector.<DisplayObject>           = new <DisplayObject>[];
 
-    private var _raysFirstTexture:RenderTexture;
-    private var _raysSecondTexture:RenderTexture;
+    private var _tempTextureA:RenderTexture;
+    private var _tempTextureB:RenderTexture;
     private var _castersTexture:RenderTexture;
     private var _shadowsTexture:RenderTexture;
 
@@ -50,10 +51,10 @@ public class LightResolver {
     public function set shadowLayer(value:ShadowLayer):void { _shadowLayer = value; }
 
     public function LightResolver() {
-        _raysFirstTexture   = new RenderTexture(512, 512, false);
-        _raysSecondTexture  = new RenderTexture(512, 512, false);
-        _castersTexture     = new RenderTexture(2048, 2048, false);
-        _shadowsTexture     = new RenderTexture(2048, 2048, false);
+        _tempTextureA   = new RenderTexture(512, 512, false);
+        _tempTextureB   = new RenderTexture(512, 512, false);
+        _castersTexture = new RenderTexture(2048, 2048, false);
+        _shadowsTexture = new RenderTexture(2048, 2048, false);
 
         for(var i:int = 2; i <= 32; i *= 2) {
             var shader:RayReductorShader = new RayReductorShader();
@@ -65,8 +66,8 @@ public class LightResolver {
 
     public function get castersTexture():Texture { return _castersTexture; }
     public function get shadowsTexture():Texture { return _shadowsTexture; }
-    public function get raysFirstTexture():Texture { return _raysFirstTexture; } // TODO: remove
-    public function get raysSecondTexture():Texture { return _raysSecondTexture; } // TODO: remove
+    public function get tempTextureA():Texture { return _tempTextureA; } // TODO: remove
+    public function get tempTextureB():Texture { return _tempTextureB; } // TODO: remove
 
     /** Adds a new light to be resolved. */
     public function addLight(light:Light):void {
@@ -103,23 +104,23 @@ public class LightResolver {
     public function resolve():void {
         renderCasters(_shadowCasters, _castersTexture);
 
-        _shadowsTexture.clear();
-        _shadowsTexture.draw(new Quad(2048, 2048, 0x000000));
-
-        _raysFirstTexture.clear();
-        _raysSecondTexture.clear();
+        _shadowsTexture.clear(0x000000, 1);
+        _tempTextureA.clear();
+        _tempTextureB.clear();
 
         var lightCount:int = _lights.length;
         for(var i:int = 0; i < lightCount; i++) {
             var light:Light = _lights[i];
 
             setLightRect(light, _lightRect);
-            renderRays(_lightRect, _raysFirstTexture, castersTexture);
 
-            var shadowMap:Texture = renderShadowMap(_lightRect, _raysFirstTexture, _raysSecondTexture, 32);
-            var output:Texture = shadowMap == _raysFirstTexture ? _raysSecondTexture : _raysFirstTexture;
+            renderRays(_lightRect, _tempTextureA, castersTexture);
+
+            var shadowMap:Texture = renderShadowMap(_lightRect, _tempTextureA, _tempTextureB, 32);
+            var output:Texture = shadowMap == _tempTextureA ? _tempTextureB : _tempTextureA;
 
             renderShadow(light, _lightRect, output, shadowMap);
+
             var shadow:Texture = renderBlur(light, _lightRect, output, shadowMap);
 
             renderFinalShadow(light, _lightRect, shadow, _shadowsTexture);
@@ -149,13 +150,13 @@ public class LightResolver {
 
         var w:int           = getNextPowerOfTwo(Math.round(output.width));
         var h:int           = getNextPowerOfTwo(Math.round(output.height));
-        var hOffset:Number  = w - output.width;
-        var vOffset:Number  = h - output.height;
+        var hOffset:Number  = (w - output.width) / 2;
+        var vOffset:Number  = (h - output.height) / 2;
 
-        output.left    = Math.round(output.left - hOffset / 2);
-        output.right   = Math.round(output.right + hOffset / 2);
-        output.top     = Math.round(output.top - vOffset / 2);
-        output.bottom  = Math.round(output.bottom + vOffset / 2);
+        output.left    = Math.round(output.left - hOffset);
+        output.right   = Math.round(output.right + hOffset);
+        output.top     = Math.round(output.top - vOffset);
+        output.bottom  = Math.round(output.bottom + vOffset);
     }
 
     /** Creates a texture with each ray drawn horizontally, so it can later be used for rendering a shadow map. */
