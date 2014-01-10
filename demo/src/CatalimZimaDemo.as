@@ -7,6 +7,8 @@ package {
 import flash.geom.Point;
 import flash.geom.Rectangle;
 
+import starling.animation.Tween;
+
 import starling.core.Starling;
 import starling.display.BlendMode;
 
@@ -16,8 +18,11 @@ import starling.display.Quad;
 
 import starling.display.Sprite;
 import starling.events.Event;
+import starling.events.TouchEvent;
+import starling.events.TouchPhase;
 import starling.lighting.Light;
 import starling.lighting.LightResolver;
+import starling.lighting.ShadowLayer;
 import starling.textures.SubTexture;
 import starling.textures.Texture;
 
@@ -36,6 +41,8 @@ public class CatalimZimaDemo extends Sprite {
     private var catWalkTexture:Texture;
 
     private var _resolver:LightResolver;
+
+    private var _overlayBottomLayer:Sprite;
 
     public function CatalimZimaDemo() {
         addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
@@ -61,7 +68,8 @@ public class CatalimZimaDemo extends Sprite {
 
         _resolver                   = new LightResolver();
         var background:Image        = new Image(tileTexture);
-        var shadow:Image            = new Image(_resolver.shadowsTexture);
+        _overlayBottomLayer         = new Sprite();
+        var shadow:ShadowLayer      = new ShadowLayer(_overlayBottomLayer, _resolver);
         var cat:Image               = new Image(catTexture);
         var catWalk:MovieClip       = new MovieClip(catWalkAnim, 23);
         var redLightQuad:Quad       = createLightQuad(276, 276, 0xff0000);
@@ -76,17 +84,19 @@ public class CatalimZimaDemo extends Sprite {
         background.setTexCoords(2, new Point(0, 600 / tileTexture.height));
         background.setTexCoords(3, new Point(800 / tileTexture.width, 600 / tileTexture.height));
 
+        cat.alignPivot();
+        cat.x = cat.width / 2; cat.y = cat.height / 2;
+
         catWalk.x = 538;
         catWalk.y = 172;
 
-        addChild(background);
+        _overlayBottomLayer.addChild(background);
+
         addChild(shadow);
         addChild(cat);
         addChild(catWalk);
         addChild(redLightQuad);
         addChild(blueLightQuad);
-
-        shadow.blendMode = BlendMode.MULTIPLY;
 
         _resolver.addShadowCaster(cat);
         _resolver.addShadowCaster(catWalk);
@@ -96,11 +106,55 @@ public class CatalimZimaDemo extends Sprite {
 
         Starling.juggler.add(catWalk);
 
-        addEventListener(Event.ENTER_FRAME, onEnterFrame);
-    }
+        addEventListener(TouchEvent.TOUCH, function(e:TouchEvent):void {
+            if(e.getTouch(cat, TouchPhase.ENDED)) {
+                var tweenCat:Tween = new Tween(cat, 7.5);
+                tweenCat.animate("scaleX", 1.1);
+                tweenCat.animate("scaleY", 1.1);
+                tweenCat.animate("rotation", Math.PI * 2);
+                tweenCat.repeatCount = 2;
+                tweenCat.reverse = true;
+                Starling.juggler.add(tweenCat);
 
-    private function onEnterFrame(event:Event):void {
-        _resolver.resolve();
+                var tweenRed:Tween = new Tween(redLight, 0);
+                tweenRed.animate("color", 0xffffff);
+                tweenRed.reverse = true;
+                tweenRed.repeatCount = 15 / 0.2 + 1;
+                tweenRed.repeatDelay = 0.2;
+                Starling.juggler.add(tweenRed);
+
+                var tweenRedQuad:Tween = new Tween(redLightQuad, 0);
+                tweenRedQuad.animate("color", 0xffffff);
+                tweenRedQuad.reverse = true;
+                tweenRedQuad.repeatCount = 15 / 0.2 + 1;
+                tweenRedQuad.repeatDelay = 0.2;
+                Starling.juggler.add(tweenRedQuad);
+            }
+
+            if(e.getTouch(catWalk, TouchPhase.ENDED)) {
+                var tweenCatWalk:Tween = new Tween(catWalk, 10);
+                var oldX:int = catWalk.x;
+                var oldY:int = catWalk.y;
+                tweenCatWalk.animate("x", -600);
+                tweenCatWalk.animate("y", oldY + 400);
+                tweenCatWalk.onComplete = function():void { catWalk.x = oldX; catWalk.y = oldY; };
+                Starling.juggler.add(tweenCatWalk);
+
+                var tweenBlue:Tween = new Tween(blueLight, 0);
+                tweenBlue.animate("color", 0x00ff00);
+                tweenBlue.reverse = true;
+                tweenBlue.repeatCount = 10 / 0.2;
+                tweenBlue.repeatDelay = 0.2;
+                Starling.juggler.add(tweenBlue);
+
+                var tweenBlueQuad:Tween = new Tween(blueLightQuad, 0);
+                tweenBlueQuad.animate("color", 0x00ff00);
+                tweenBlueQuad.reverse = true;
+                tweenBlueQuad.repeatCount = 10 / 0.2;
+                tweenBlueQuad.repeatDelay = 0.2;
+                Starling.juggler.add(tweenBlueQuad);
+            }
+        });
     }
 
     private function createLightQuad(x:Number, y:Number, color:int):Quad {
