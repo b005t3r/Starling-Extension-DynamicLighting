@@ -18,8 +18,14 @@ import flash.display3D.Context3DProgramType;
 import starling.shaders.ITextureShader;
 
 public class RayReductorShader extends EasierAGAL implements ITextureShader {
+    private var _useVertexUVRange:Boolean;
+
     private var _constants:Vector.<Number>  = new <Number>[0.0, 4.0, 0.0, 2.0];
-    private var _uv:Vector.<Number>         = new <Number>[0.0, 0.0, 0.0, 0.0];
+    private var _uv:Vector.<Number>         = new <Number>[0.0, 1.0, 0.0, 1.0];
+
+    public function RayReductorShader(useVertexUVRange:Boolean = true) {
+        _useVertexUVRange = useVertexUVRange;
+    }
 
     public function get pixelWidth():Number { return _constants[0]; }
     public function set pixelWidth(value:Number):void { _constants[0] = value; }
@@ -47,9 +53,14 @@ public class RayReductorShader extends EasierAGAL implements ITextureShader {
     public function get maxV():Number { return _uv[3]; }
     public function set maxV(value:Number):void { _uv[3] = value; }
 
+    public function get useVertexUVRange():Boolean { return _useVertexUVRange; }
+    public function set useVertexUVRange(value:Boolean):void { _useVertexUVRange = value; }
+
     public function activate(context:Context3D):void {
         context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, _constants);
-        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _uv);
+
+        if(! _useVertexUVRange)
+            context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _uv);
     }
 
     public function deactivate(context:Context3D):void { }
@@ -60,6 +71,11 @@ public class RayReductorShader extends EasierAGAL implements ITextureShader {
 
         comment("Pass uv coordinates to fragment shader");
         move(VARYING[0], ATTRIBUTE[1]);
+
+        if(_useVertexUVRange) {
+            comment("Pass minU, maxU, minV, maxV to fragment shader");
+            move(VARYING[1], ATTRIBUTE[2]);
+        }
     }
 
     override protected function _fragmentShader():void {
@@ -67,8 +83,8 @@ public class RayReductorShader extends EasierAGAL implements ITextureShader {
         var readCount:IComponent        = CONST[0].y;
         var zero:IComponent             = CONST[0].z;
         var two:IComponent              = CONST[0].w;
-        var minU:IComponent             = CONST[1].x;
-        var maxU:IComponent             = CONST[1].y;
+        var minU:IComponent             = _useVertexUVRange ? VARYING[1].x : CONST[1].x;
+        var maxU:IComponent             = _useVertexUVRange ? VARYING[1].y : CONST[1].y;
         var uv:IRegister                = TEMP[0];
         var halfPixelWidth:IComponent   = TEMP[1].x;
         var outputColor:IRegister       = TEMP[7];

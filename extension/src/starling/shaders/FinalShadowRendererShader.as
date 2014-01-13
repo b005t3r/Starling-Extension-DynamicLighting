@@ -17,6 +17,8 @@ import flash.display3D.Context3DProgramType;
 public class FinalShadowRendererShader extends EasierAGAL implements ITextureShader {
     private static var _shaderConstants:Vector.<Number> = new <Number>[0, 1, 2, 0];
 
+    private var _useVertexUVRange:Boolean;
+
     private var _uv:Vector.<Number> = new <Number>[0, 1, 0, 1];
 
     // shader constants
@@ -27,6 +29,17 @@ public class FinalShadowRendererShader extends EasierAGAL implements ITextureSha
     protected var uMax:IComponent   = CONST[1].y;
     protected var vMin:IComponent   = CONST[1].z;
     protected var vMax:IComponent   = CONST[1].w;
+
+    public function FinalShadowRendererShader(useVertexUVRange:Boolean = true) {
+        _useVertexUVRange = useVertexUVRange;
+
+        if(_useVertexUVRange) {
+            uMin = VARYING[1].x;
+            uMax = VARYING[1].y;
+            vMin = VARYING[1].z;
+            vMax = VARYING[1].w;
+        }
+    }
 
     public function get minU():Number { return _uv[0]; }
     public function set minU(value:Number):void { _uv[0] = value; }
@@ -42,7 +55,9 @@ public class FinalShadowRendererShader extends EasierAGAL implements ITextureSha
 
     public function activate(context:Context3D):void {
         context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, _shaderConstants);
-        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _uv);
+
+        if(_useVertexUVRange)
+            context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _uv);
     }
 
     public function deactivate(context:Context3D):void { }
@@ -53,6 +68,11 @@ public class FinalShadowRendererShader extends EasierAGAL implements ITextureSha
 
         comment("Pass uv coordinates to fragment shader");
         move(VARYING[0], ATTRIBUTE[1]);
+
+        if(_useVertexUVRange) {
+            comment("Pass minU, maxU, minV, maxV to fragment shader");
+            move(VARYING[1], ATTRIBUTE[2]);
+        }
     }
 
     override protected function _fragmentShader():void {

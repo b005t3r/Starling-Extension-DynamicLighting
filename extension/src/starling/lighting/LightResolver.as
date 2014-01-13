@@ -9,6 +9,8 @@ import flash.geom.Point;
 import flash.geom.Rectangle;
 import flash.utils.getTimer;
 
+import starling.core.Starling;
+
 import starling.display.BlendMode;
 
 import starling.display.DisplayObject;
@@ -125,6 +127,8 @@ public class LightResolver {
 
             renderFinalShadow(light, _lightRect, shadow, _shadowsTexture);
         }
+
+        Starling.context.setRenderToBackBuffer();
     }
 
     private function renderCasters(casters:Vector.<DisplayObject>, target:RenderTexture):void {
@@ -170,10 +174,20 @@ public class LightResolver {
         _textureProcessor.shader    = _raysShader;
 
         // set UV range - only this part of input will be processed
-        _raysShader.minU = lightRect.left / _textureProcessor.input.root.width;
-        _raysShader.maxU = lightRect.right / _textureProcessor.input.root.width;
-        _raysShader.minV = lightRect.top / _textureProcessor.input.root.height;
-        _raysShader.maxV = lightRect.bottom / _textureProcessor.input.root.height;
+        if(_textureProcessor.passUVRangeInGeometry) {
+            _textureProcessor.setUVRange(
+                lightRect.left / _textureProcessor.input.root.width,
+                lightRect.right / _textureProcessor.input.root.width,
+                lightRect.top / _textureProcessor.input.root.height,
+                lightRect.bottom / _textureProcessor.input.root.height
+            );
+        }
+        else {
+            _raysShader.minU = lightRect.left / _textureProcessor.input.root.width;
+            _raysShader.maxU = lightRect.right / _textureProcessor.input.root.width;
+            _raysShader.minV = lightRect.top / _textureProcessor.input.root.height;
+            _raysShader.maxV = lightRect.bottom / _textureProcessor.input.root.height;
+        }
 
         // clipping is done in output space - start at [0, 0]
         _helperRect.setTo(0, 0, lightRect.width, lightRect.height);
@@ -195,15 +209,25 @@ public class LightResolver {
             reductionShader.pixelWidth = 1 / raysTexture.root.width;
 
             // set UV range - only this part of input will be processed
-            reductionShader.minU = _helperRect.left / _textureProcessor.input.root.width;
-            reductionShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
-            reductionShader.minV = _helperRect.top / _textureProcessor.input.root.height;
-            reductionShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+            if(_textureProcessor.passUVRangeInGeometry) {
+                _textureProcessor.setUVRange(
+                    _helperRect.left / _textureProcessor.input.root.width,
+                    _helperRect.right / _textureProcessor.input.root.width,
+                    _helperRect.top / _textureProcessor.input.root.height,
+                    _helperRect.bottom / _textureProcessor.input.root.height
+                );
+            }
+            else {
+                reductionShader.minU = _helperRect.left / _textureProcessor.input.root.width;
+                reductionShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
+                reductionShader.minV = _helperRect.top / _textureProcessor.input.root.height;
+                reductionShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+            }
+
+            _helperRect.width /= reductionShader.numReads;
 
             _textureProcessor.shader = reductionShader;
             _textureProcessor.process(false, null, _helperRect, BlendMode.NONE);
-
-            _helperRect.width /= reductionShader.numReads;
 
             if(_helperRect.width == 2)
                 break;
@@ -222,10 +246,21 @@ public class LightResolver {
         _textureProcessor.shader    = _shadowShader;
         //_textureProcessor.shader    = new RenderTextureShader();
 
-        _shadowShader.minU = _helperRect.left / _textureProcessor.input.root.width;
-        _shadowShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
-        _shadowShader.minV = _helperRect.top / _textureProcessor.input.root.height;
-        _shadowShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+        // set UV range - only this part of input will be processed
+        if(_textureProcessor.passUVRangeInGeometry) {
+            _textureProcessor.setUVRange(
+                _helperRect.left / _textureProcessor.input.root.width,
+                _helperRect.right / _textureProcessor.input.root.width,
+                _helperRect.top / _textureProcessor.input.root.height,
+                _helperRect.bottom / _textureProcessor.input.root.height
+            );
+        }
+        else {
+            _shadowShader.minU = _helperRect.left / _textureProcessor.input.root.width;
+            _shadowShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
+            _shadowShader.minV = _helperRect.top / _textureProcessor.input.root.height;
+            _shadowShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+        }
 
         _shadowShader.pixelWidth = 1 / _textureProcessor.input.root.width;
         _shadowShader.pixelHeight = 1 / _textureProcessor.input.root.height;
@@ -252,10 +287,21 @@ public class LightResolver {
         _textureProcessor.output = tmpTexture;
         _textureProcessor.shader = _blurShader;
 
-        _blurShader.minU = _helperRect.left / _textureProcessor.input.root.width;
-        _blurShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
-        _blurShader.minV = _helperRect.top / _textureProcessor.input.root.height;
-        _blurShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+        // set UV range - only this part of input will be processed
+        if(_textureProcessor.passUVRangeInGeometry) {
+            _textureProcessor.setUVRange(
+                _helperRect.left / _textureProcessor.input.root.width,
+                _helperRect.right / _textureProcessor.input.root.width,
+                _helperRect.top / _textureProcessor.input.root.height,
+                _helperRect.bottom / _textureProcessor.input.root.height
+            );
+        }
+        else {
+            _blurShader.minU = _helperRect.left / _textureProcessor.input.root.width;
+            _blurShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
+            _blurShader.minV = _helperRect.top / _textureProcessor.input.root.height;
+            _blurShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+        }
 
         _blurShader.edgeStrength    = light.edgeBlur;
         _blurShader.centerStrength  = light.centerBlur;
@@ -289,10 +335,21 @@ public class LightResolver {
         _textureProcessor.output = outputTexture;
         _textureProcessor.shader = _finalShadowShader;
 
-        _finalShadowShader.minU = _helperRect.left / _textureProcessor.input.root.width;
-        _finalShadowShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
-        _finalShadowShader.minV = _helperRect.top / _textureProcessor.input.root.height;
-        _finalShadowShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+        // set UV range - only this part of input will be processed
+        if(_textureProcessor.passUVRangeInGeometry) {
+            _textureProcessor.setUVRange(
+                _helperRect.left / _textureProcessor.input.root.width,
+                _helperRect.right / _textureProcessor.input.root.width,
+                _helperRect.top / _textureProcessor.input.root.height,
+                _helperRect.bottom / _textureProcessor.input.root.height
+            );
+        }
+        else {
+            _finalShadowShader.minU = _helperRect.left / _textureProcessor.input.root.width;
+            _finalShadowShader.maxU = _helperRect.right / _textureProcessor.input.root.width;
+            _finalShadowShader.minV = _helperRect.top / _textureProcessor.input.root.height;
+            _finalShadowShader.maxV = _helperRect.bottom / _textureProcessor.input.root.height;
+        }
 
         _helperMatrix.identity();
         _helperMatrix.translate(lightRect.x, lightRect.y);

@@ -19,9 +19,15 @@ import starling.shaders.ITextureShader;
 public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
     private static var _constants:Vector.<Number> = new <Number>[0.0, 0.5, 1.0, 2.0];
 
+    private var _useVertexUVRange:Boolean;
+
     private var _uv:Vector.<Number>         = new <Number>[0.0, 1.0, 0.0, 1.0];
     private var _colors:Vector.<Number>     = new <Number>[1.0, 1.0, 1.0, 0.0];
     private var _pixelSize:Vector.<Number>  = new <Number>[0.0, 0.0, 0.0, 0.0];
+
+    public function ShadowRendererShader(useVertexUVRange:Boolean = true) {
+        _useVertexUVRange = useVertexUVRange;
+    }
 
     public function get minU():Number { return _uv[0]; }
     public function set minU(value:Number):void { _uv[0] = value; }
@@ -71,11 +77,16 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
         _pixelSize[3] = value / 2;
     }
 
+    public function get useVertexUVRange():Boolean { return _useVertexUVRange; }
+    public function set useVertexUVRange(value:Boolean):void { _useVertexUVRange = value; }
+
     public function activate(context:Context3D):void {
         context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, _constants);
-        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _uv);
-        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 2, _colors);
-        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 3, _pixelSize);
+        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _colors);
+        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 2, _pixelSize);
+
+        if(_useVertexUVRange)
+            context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 3, _uv);
     }
 
     public function deactivate(context:Context3D):void { }
@@ -86,6 +97,11 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
 
         comment("Pass uv coordinates to fragment shader");
         move(VARYING[0], ATTRIBUTE[1]);
+
+        if(_useVertexUVRange) {
+            comment("Pass minU, maxU, minV, maxV to fragment shader");
+            move(VARYING[1], ATTRIBUTE[2]);
+        }
     }
 
     override protected function _fragmentShader():void {
@@ -93,19 +109,19 @@ public class ShadowRendererShader extends EasierAGAL implements ITextureShader{
         var half:IComponent             = CONST[0].y;
         var one:IComponent              = CONST[0].z;
         var two:IComponent              = CONST[0].w;
-        var minU:IComponent             = CONST[1].x;
-        var maxU:IComponent             = CONST[1].y;
-        var minV:IComponent             = CONST[1].z;
-        var maxV:IComponent             = CONST[1].w;
-        var lightColor:IField           = CONST[2].rgb;
+        var minU:IComponent             = _useVertexUVRange ? VARYING[1].x : CONST[3].x;
+        var maxU:IComponent             = _useVertexUVRange ? VARYING[1].y : CONST[3].y;
+        var minV:IComponent             = _useVertexUVRange ? VARYING[1].z : CONST[3].z;
+        var maxV:IComponent             = _useVertexUVRange ? VARYING[1].w : CONST[3].w;
+        var lightColor:IField           = CONST[1].rgb;
         var uvInput:IRegister           = TEMP[0];
         var uvHorizontal:IRegister      = TEMP[1];
         var uvVertical:IRegister        = TEMP[2];
         var uv:IRegister                = TEMP[3];
         var inputColor:IRegister        = TEMP[6];
         var outputColor:IRegister       = TEMP[7];
-        var halfPixelWidth:IComponent   = CONST[3].z;
-        var halfPixelHeight:IComponent  = CONST[3].w;
+        var halfPixelWidth:IComponent   = CONST[2].z;
+        var halfPixelHeight:IComponent  = CONST[2].w;
 
         move(uvInput, VARYING[0]);
 

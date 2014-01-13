@@ -18,8 +18,10 @@ import starling.shaders.ITextureShader;
 import starling.shaders.LightingShaderUtil;
 
 public class RayGeneratorShader extends EasierAGAL implements ITextureShader {
-    private var _constants:Vector.<Number>  = new <Number>[0.0, 0.5, 1.0, 2.0];
-    private var _uv:Vector.<Number>      = new <Number>[0.0, 0.0, 0.0, 0.0];
+    private static var _constants:Vector.<Number> = new <Number>[0.0, 0.5, 1.0, 2.0];
+
+    private var _useVertexUVRange:Boolean;
+    private var _uv:Vector.<Number> = new <Number>[0.0, 1.0, 0.0, 1.0];
 
     public function get minU():Number { return _uv[0]; }
     public function set minU(value:Number):void { _uv[0] = value; }
@@ -33,9 +35,15 @@ public class RayGeneratorShader extends EasierAGAL implements ITextureShader {
     public function get maxV():Number { return _uv[3]; }
     public function set maxV(value:Number):void { _uv[3] = value; }
 
+    public function RayGeneratorShader(useVertexUVRange:Boolean = true) {
+        _useVertexUVRange = useVertexUVRange;
+    }
+
     public function activate(context:Context3D):void {
         context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 0, _constants);
-        context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _uv);
+
+        if(! _useVertexUVRange)
+            context.setProgramConstantsFromVector(Context3DProgramType.FRAGMENT, 1, _uv);
     }
 
     public function deactivate(context:Context3D):void { }
@@ -46,12 +54,22 @@ public class RayGeneratorShader extends EasierAGAL implements ITextureShader {
 
         comment("Pass uv coordinates to fragment shader");
         move(VARYING[0], ATTRIBUTE[1]);
+
+        if(_useVertexUVRange) {
+            comment("Pass minU, maxU, minV, maxV to fragment shader");
+            move(VARYING[1], ATTRIBUTE[2]);
+        }
     }
 
     override protected function _fragmentShader():void {
+        var minU:IComponent = _useVertexUVRange ? VARYING[1].x : CONST[1].x;
+        var maxU:IComponent = _useVertexUVRange ? VARYING[1].y : CONST[1].y;
+        var minV:IComponent = _useVertexUVRange ? VARYING[1].z : CONST[1].z;
+        var maxV:IComponent = _useVertexUVRange ? VARYING[1].w : CONST[1].w;
+
         move(TEMP[0], VARYING[0]);
 
-        ShaderUtil.uvToCartesian(TEMP[0].x, TEMP[0].y, CONST[1].x, CONST[1].y, CONST[1].z, CONST[1].w, TEMP[3].x, CONST[0].z, CONST[0].w);
+        ShaderUtil.uvToCartesian(TEMP[0].x, TEMP[0].y, minU, maxU, minV, maxV, TEMP[3].x, CONST[0].z, CONST[0].w);
 
         comment("[x,y] <- cartesian coords, [z,w] <- abs(x,y)");
         abs(TEMP[0].z, TEMP[0].x);
@@ -62,11 +80,11 @@ public class RayGeneratorShader extends EasierAGAL implements ITextureShader {
 
         move(TEMP[1], TEMP[0]);
         move(TEMP[3], TEMP[0]);
-        ShaderUtil.cartesianToUV(TEMP[1].x, TEMP[1].y, CONST[1].x, CONST[1].y, CONST[1].z, CONST[1].w, TEMP[0].w, CONST[0].z, CONST[0].w);
+        ShaderUtil.cartesianToUV(TEMP[1].x, TEMP[1].y, minU, maxU, minV, maxV, TEMP[0].w, CONST[0].z, CONST[0].w);
 
         move(TEMP[2], TEMP[0]);
         move(TEMP[4], TEMP[0]);
-        ShaderUtil.cartesianToUV(TEMP[2].y, TEMP[2].x, CONST[1].x, CONST[1].y, CONST[1].z, CONST[1].w, TEMP[0].w, CONST[0].z, CONST[0].w);
+        ShaderUtil.cartesianToUV(TEMP[2].y, TEMP[2].x, minU, maxU, minV, maxV, TEMP[0].w, CONST[0].z, CONST[0].w);
 
         comment("Use UV coordinates passed from vertex shader to sample the texture");
         sampleTexture(TEMP[1], TEMP[1], SAMPLER[0], [TextureFlag.TYPE_2D, TextureFlag.MODE_CLAMP, TextureFlag.FILTER_NEAREST, TextureFlag.MIP_NO]);

@@ -170,8 +170,8 @@ public class CatalimZimaDemo extends Sprite {
         var l:Light = new Light(quad.width / 2, quad.height / 2, radius, quad);
 
         l.color         = quad.color;
-        l.edgeBlur      = 6;
-        l.centerBlur    = 1;
+        l.edgeBlur      = 0;
+        l.centerBlur    = 0;
 
         return l;
     }
