@@ -11,6 +11,5 @@ For a live demo, visit this page: http://b005t3r.github.io/Starling-Extension-Dy
 
 Dependencies:
 -------------
-
-https://github.com/b005t3r/Starling-Extension-TextureProcessor
-https://github.com/Barliesque/EasyAGAL
+- https://github.com/b005t3r/Starling-Extension-TextureProcessor
+- https://github.com/Barliesque/EasyAGAL
