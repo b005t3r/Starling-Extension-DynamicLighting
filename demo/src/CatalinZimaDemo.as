@@ -26,7 +26,7 @@ import starling.lighting.ShadowLayer;
 import starling.textures.SubTexture;
 import starling.textures.Texture;
 
-public class CatalimZimaDemo extends Sprite {
+public class CatalinZimaDemo extends Sprite {
     [Embed(source="/tile.jpg")]
     public static const Tile:Class;
 
@@ -44,7 +44,7 @@ public class CatalimZimaDemo extends Sprite {
 
     private var _overlayBottomLayer:Sprite;
 
-    public function CatalimZimaDemo() {
+    public function CatalinZimaDemo() {
         addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
     }
 
@@ -170,8 +170,8 @@ public class CatalimZimaDemo extends Sprite {
         var l:Light = new Light(quad.width / 2, quad.height / 2, radius, quad);
 
         l.color         = quad.color;
-        l.edgeBlur      = 0;
-        l.centerBlur    = 0;
+        l.edgeBlur      = 4;
+        l.centerBlur    = 1;
 
         return l;
     }
